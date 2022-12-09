@@ -349,7 +349,8 @@ class DoodleTransfer:
         target_patches, target_norms = self._extract_all_patches(target_semantic)
         style_loss = self.style_loss(self.vgg_weights, target_patches, target_norms,
                                      self.style_patches, self.style_norms)
-        loss = self.style_weight*style_loss + self.tv_loss(tx)
+        tv_loss = self.tv_loss(tx)
+        loss = self.style_weight*style_loss + tv_loss
         loss.backward()
 
         if self.args.use_tensorboard:
@@ -357,8 +358,8 @@ class DoodleTransfer:
         return loss
 
     def _write_report(self, style_loss, tv_loss):
-        self.writer.add_scalar('Loss/style', style_loss, self.iteration)
-        self.writer.add_scalar('Loss/tv', tv_loss, self.iteration)
+        self.writer.add_scalar('Loss/style', style_loss.item(), self.iteration)
+        self.writer.add_scalar('Loss/tv', tv_loss.item(), self.iteration)
 
         if self.iteration % self.args.detail_interval == 0:
             example = self.target
@@ -390,7 +391,7 @@ def main():
                         help='A semantic segmentation of the style image')
     parser.add_argument('--content-mask', type=str, nargs='+', required=True,
                         help='A semantic segmentation of the content image')
-    parser.add_argument('--iterations', type=int, default=100, help='Number of optimization passes to run')
+    parser.add_argument('--iterations', type=int, default=10, help='Number of optimization passes to run')
     parser.add_argument('--vgg-weights', type=float, nargs='+', default=DEFAULT_STYLE_FRACTIONS,
                         help='Importance of each style activation layer to the MRF loss computation')
     parser.add_argument('--keep-patch-order', action='store_true',
@@ -399,6 +400,7 @@ def main():
     parser.add_argument('--style-weight', type=float, default=150, help='Importance of the style loss')
     parser.add_argument('--tv-weight', type=float, default=1_000, help='Importance of the TV regularization')
     parser.add_argument('--device', default='cuda', help='Device on which to run the optimization')
+    parser.add_argument('--detail-interval', type=int, help='Frequency at which detailed statistics are logged')
     parser.add_argument('--use-tensorboard', action='store_true', help='Log statistics to tensorboard')
     parser.add_argument('--style-layers', nargs='+', default=DEFAULT_LAYERS,
                         help='Names of VGG19 feature maps to use for the style loss')
@@ -421,7 +423,7 @@ def main():
         if args.target_image:
             args.target_image = load_image(' '.join(args.target_image))
         else:
-            args.target_image = np.random.random(args.image_shape + [3])
+            args.target_image = np.random.random(tuple(args.image_shape) + (3,))
 
         if not len(args.style_layers):
             raise ValueError('at least 1 style activation must be used')
@@ -438,6 +440,7 @@ def main():
             plt.show()
 
     except Exception as e:
+        raise
         print(f'error: {e}', file=sys.stderr)
         return 1
 
