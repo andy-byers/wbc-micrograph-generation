@@ -1,4 +1,6 @@
 # wbc-micrograph-generation
+> Note: This project expects the [`@zxaoyou/segmentation_WBC`](https://github.com/zxaoyou/segmentation_WBC) dataset in the root directory. It could, however, be used with other datasets if `dataset.py` is replaced with some code to parse the replacement dataset.
+
 Generation of artificial white blood cell micrographs using Pyhon
 
 This is a project I did for school. It adapts the work of Scalbert et al. to generating white blood cells (WBCs). Use `python3 <script> --help` to view expected parameters for each script. Details can be found in `report.Rmd`, which can be turned into a PDF using RStudio. A pretrained mask model is provided in `models`, as well as some example masks and images in `images`.
